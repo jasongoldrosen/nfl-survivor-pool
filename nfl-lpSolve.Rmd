@@ -1,17 +1,39 @@
-setwd("/Users/jasongoldrosen/Documents/Jason/nfl/") 
-df <- read.csv("nfl_games_2019.csv")
-#library(httr)
-#df <- read.csv(text=GET("https://raw.githubusercontent.com/jasongoldrosen/nfl-survivor-pool/master/nfl_games_2019.csv"), skip=7, header=T)
+---
+title: "NFL Survival Pool Project"
+author: "Jason Goldrosen"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: github_document
+---
+```{r setup, include = FALSE, cache = FALSE}  
+knitr::opts_chunk$set(error = TRUE)  
+```
+## Background
 
-df$game_id <- as.integer(rownames(df))
+There's a big NFL survival pool taking at work this year. Distracted by the NBA, Premier League, and all things Michigan sports, I haven't followed the NFL that closely over the last few years. 
+In order to set my picks on auto-pilot, I'm an going to implement an Linear Integer Programming solution to maximize the probabilities of surviving throughout the season.  
 
+## Previewing and cleaning the data
+```{r preview data, warning = FALSE}
+library(lpSolve)
+library(ggplot2)
+
+
+df <- read.csv("nfl_games_2019.csv") 
+df$game_id <- c(1:nrow(df))
+head(df)
+
+```
+
+```{r clean data}
 df.1 <- df[,c(1,2,5,9,13)]
 df.2 <- df[,c(1,2,6,9,13)]
 
 names(df.1)[3:4] <- c("team","elo_prob")
 names(df.2)[3:4] <- c("team","elo_prob")
+
 df.2$elo_prob <- 1 - df.2$elo_prob
-df.long <- rbind(df.1,df.2)[order(df.long$game_id),]
+df.long <- rbind(df.1,df.2)
+df.long <- df.long[order(df.long$game_id),]
 
 
 df.long$date <- as.Date(df.long$date) 
@@ -19,17 +41,13 @@ df.long$dofw <- as.POSIXlt(df.long$date)$wday
 df.long$date.2 <- df.long$date + (df.long$dofw == 4)*3 + (df.long$dofw == 1)*(-1) + (df.long$dofw == 6) + 1 
 df.long$week <- as.integer((df.long$date.2-as.Date('2019-09-02'))/7)
 
+```
 
-# k <- 1
-# for (i in list(df.1,df.2)){
-#   names(i)[3:4] <- c("team","elo_prob")
-#   if (k == 2){ i$elo_prob <- 1 - i$elo_prob}
-#   print(head(i))
-#   k <- k + 1  
-# }
+## Implementing lpSolve
 
-length(unique(df.long$team)) + length(unique(df.long$week))
+You can also embed plots, for example:
 
+```{r lpsolve}
 const <- matrix(rep(0,25088), 
                 nrow=49, 
                 ncol=512)
@@ -47,8 +65,6 @@ obj <- df.long$elo_prob
 direction <- c(rep("<=",length(unique(df.long$team))),rep("=",length(unique(df.long$week))))
 rhs <- rep(1,nrow(const))
 
-library(lpSolve)
-
 test <- lp(direction = "max", 
            objective.in = obj, 
            const.mat = const, 
@@ -56,13 +72,19 @@ test <- lp(direction = "max",
            const.rhs = rhs)
 
 solns <- df.long[test$solution!=0,c("week","team","elo_prob")]
+#colnames(solns) <- c("Week", "Team", "Pr(Win)")
 
+knitr::kable(solns, row.names=FALSE, digits = 4)
+
+```
+
+
+```{r plots}
 solns$prob <- cumprod(solns$elo_prob)
-
-print(solns)
-
 
 ggplot(solns, aes(x=week,y=prob)) + 
   geom_point() + 
   geom_line() + 
   labs(title="Cumulative Survival Probability",x ="NFL Game Week", y = "")
+
+```

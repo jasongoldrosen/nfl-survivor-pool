@@ -6,7 +6,7 @@ September 05, 2019
 Background
 ----------
 
-There's a big NFL survival pool taking at work this year. Distracted by the NBA, Premier League, and all things Michigan sports, I haven't followed the NFL that closely over the last few years. In order to set my picks on auto-pilot, I'm an going to implment a LIP solution to optimize the choices to maximize the probabilities of surviving throughout the season.
+There's a big NFL survival pool taking at work this year. Distracted by the NBA, Premier League, and all things Michigan sports, I haven't followed the NFL that closely over the last few years. In order to set my picks on auto-pilot, I'm an going to implement an Linear Integer Programming solution to maximize the probabilities of surviving throughout the season.
 
 Previewing and cleaning the data
 --------------------------------
@@ -108,8 +108,6 @@ knitr::kable(solns, row.names=FALSE, digits = 4)
 |    15| BAL  |     0.8088|
 |    16| SEA  |     0.8053|
 |    17| LAR  |     0.8331|
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ``` r
 solns$prob <- cumprod(solns$elo_prob)
