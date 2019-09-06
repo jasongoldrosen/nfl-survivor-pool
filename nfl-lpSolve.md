@@ -8,13 +8,35 @@ Background
 
 There's a big NFL survival pool taking at work this year. Distracted by the NBA, Premier League, and all things Michigan sports, I haven't followed the NFL that closely over the last few years. In order to set my picks on auto-pilot, I'm an going to implment a LIP solution to optimize the choices to maximize the probabilities of surviving throughout the season.
 
-Cleaning the data
------------------
+Previewing and cleaning the data
+--------------------------------
 
 ``` r
-df <- read.csv("nfl_games_2019.csv")
-df$game_id <- c(1:nrow(df))
+library(lpSolve)
+library(ggplot2)
 
+
+df <- read.csv("nfl_games_2019.csv") 
+df$game_id <- c(1:nrow(df))
+head(df)
+```
+
+    ##         date season neutral playoff team1 team2     elo1     elo2
+    ## 1 2019-09-05   2019       0       0   CHI    GB 1588.898 1455.131
+    ## 2 2019-09-08   2019       0       0   PHI   WSH 1581.514 1441.022
+    ## 3 2019-09-08   2019       0       0   JAX    KC 1455.249 1602.077
+    ## 4 2019-09-08   2019       0       0   CAR   LAR 1519.379 1598.016
+    ## 5 2019-09-08   2019       0       0   MIA   BAL 1415.179 1570.539
+    ## 6 2019-09-08   2019       0       0   MIN   ATL 1538.424 1520.316
+    ##   elo_prob1 score1 score2 result1 game_id
+    ## 1 0.7584485     NA     NA      NA       1
+    ## 2 0.7654699     NA     NA      NA       2
+    ## 3 0.3843697     NA     NA      NA       3
+    ## 4 0.4803850     NA     NA      NA       4
+    ## 5 0.3728156     NA     NA      NA       5
+    ## 6 0.6173721     NA     NA      NA       6
+
+``` r
 df.1 <- df[,c(1,2,5,9,13)]
 df.2 <- df[,c(1,2,6,9,13)]
 
@@ -55,8 +77,6 @@ obj <- df.long$elo_prob
 direction <- c(rep("<=",length(unique(df.long$team))),rep("=",length(unique(df.long$week))))
 rhs <- rep(1,nrow(const))
 
-library(lpSolve)
-
 test <- lp(direction = "max", 
            objective.in = obj, 
            const.mat = const, 
@@ -64,8 +84,9 @@ test <- lp(direction = "max",
            const.rhs = rhs)
 
 solns <- df.long[test$solution!=0,c("week","team","elo_prob")]
+#colnames(solns) <- c("Week", "Team", "Pr(Win)")
 
-knitr::kable(solns, row.names=FALSE, digits = 4, caption = "Test")
+knitr::kable(solns, row.names=FALSE, digits = 4)
 ```
 
 |  week| team |  elo\_prob|
@@ -89,12 +110,6 @@ knitr::kable(solns, row.names=FALSE, digits = 4, caption = "Test")
 |    17| LAR  |     0.8331|
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-``` r
-library(ggplot2)
-```
-
-    ## Warning: package 'ggplot2' was built under R version 3.4.4
 
 ``` r
 solns$prob <- cumprod(solns$elo_prob)
