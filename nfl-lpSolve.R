@@ -1,7 +1,8 @@
-setwd("/Users/jasongoldrosen/Documents/Jason/nfl/") 
+library(ggplot2)
+library(lpSolve)
+
+setwd("~/Documents/datasci_projects/nfl-survivor-pool") 
 df <- read.csv("nfl_games_2019.csv")
-#library(httr)
-#df <- read.csv(text=GET("https://raw.githubusercontent.com/jasongoldrosen/nfl-survivor-pool/master/nfl_games_2019.csv"), skip=7, header=T)
 
 df$game_id <- as.integer(rownames(df))
 
@@ -11,7 +12,8 @@ df.2 <- df[,c(1,2,6,9,13)]
 names(df.1)[3:4] <- c("team","elo_prob")
 names(df.2)[3:4] <- c("team","elo_prob")
 df.2$elo_prob <- 1 - df.2$elo_prob
-df.long <- rbind(df.1,df.2)[order(df.long$game_id),]
+df.long <- rbind(df.1,df.2)
+df.long <- df.long[order(df.long$game_id),]
 
 
 df.long$date <- as.Date(df.long$date) 
@@ -28,10 +30,10 @@ df.long$week <- as.integer((df.long$date.2-as.Date('2019-09-02'))/7)
 #   k <- k + 1  
 # }
 
-length(unique(df.long$team)) + length(unique(df.long$week))
+row_length = length(unique(df.long$team)) + length(unique(df.long$week))
 
 const <- matrix(rep(0,25088), 
-                nrow=49, 
+                nrow=row_length, 
                 ncol=512)
 i <- 1
 for (t in unique(df.long$team)){
@@ -47,7 +49,6 @@ obj <- df.long$elo_prob
 direction <- c(rep("<=",length(unique(df.long$team))),rep("=",length(unique(df.long$week))))
 rhs <- rep(1,nrow(const))
 
-library(lpSolve)
 
 test <- lp(direction = "max", 
            objective.in = obj, 
